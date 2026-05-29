@@ -63,3 +63,25 @@ export function parseTaskUpdates(body) {
 
   return { updates };
 }
+
+export function parseReorderBody(body) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return { error: 'Invalid request body' };
+  }
+
+  if (!Array.isArray(body.order)) {
+    return { error: 'order must be an array of task ids' };
+  }
+
+  const order = body.order.map((value) => Number(value));
+
+  if (order.some((id) => !Number.isInteger(id) || id <= 0)) {
+    return { error: 'order must contain valid task ids' };
+  }
+
+  if (new Set(order).size !== order.length) {
+    return { error: 'order must not contain duplicate ids' };
+  }
+
+  return { order };
+}

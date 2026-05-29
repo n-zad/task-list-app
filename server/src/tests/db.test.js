@@ -11,6 +11,7 @@ import {
   deleteTask,
   getTaskById,
   listTasks,
+  reorderTasks,
   updateTask,
 } from '../db/tasks.js';
 
@@ -64,6 +65,7 @@ describe('toTask', () => {
       id: 1,
       title: 'Write tests',
       completed: 0,
+      position: 0,
       created_at: '2026-01-01T00:00:00.000Z',
       updated_at: '2026-01-02T00:00:00.000Z',
     });
@@ -72,6 +74,7 @@ describe('toTask', () => {
       id: 1,
       title: 'Write tests',
       completed: false,
+      position: 0,
       createdAt: '2026-01-01T00:00:00.000Z',
       updatedAt: '2026-01-02T00:00:00.000Z',
     });
@@ -107,13 +110,27 @@ describe('task repository', () => {
     assert.deepEqual(fetched, created);
   });
 
-  it('lists tasks newest first', () => {
+  it('lists tasks by position with newest at the top', () => {
     const db = getDb();
     createTask(db, 'First');
     createTask(db, 'Second');
 
     const titles = listTasks(db).map((task) => task.title);
     assert.deepEqual(titles, ['Second', 'First']);
+  });
+
+  it('reorders tasks by id list', () => {
+    const db = getDb();
+    const first = createTask(db, 'First');
+    const second = createTask(db, 'Second');
+    const third = createTask(db, 'Third');
+
+    const reordered = reorderTasks(db, [first.id, third.id, second.id]);
+
+    assert.deepEqual(
+      reordered.map((task) => task.title),
+      ['First', 'Third', 'Second'],
+    );
   });
 
   it('updates title and completed state', () => {

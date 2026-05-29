@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   normalizeTitle,
+  parseReorderBody,
   parseStatusQuery,
   parseTaskId,
   parseTaskUpdates,
@@ -32,5 +33,10 @@ describe('route validation helpers', () => {
     });
     assert.equal(parseTaskUpdates({}).error, 'No valid fields to update');
     assert.equal(parseTaskUpdates({ title: ' ' }).error, 'Task title is required');
+  });
+
+  it('parses reorder payloads', () => {
+    assert.deepEqual(parseReorderBody({ order: [3, 1, 2] }), { order: [3, 1, 2] });
+    assert.equal(parseReorderBody({ order: [1, 1] }).error, 'order must not contain duplicate ids');
   });
 });

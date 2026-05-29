@@ -49,6 +49,14 @@ export function updateTask(id, updates) {
   });
 }
 
+/** PUT /api/tasks/reorder — persist a new task order */
+export function reorderTasks(order) {
+  return request(`${API_BASE}/reorder`, {
+    method: 'PUT',
+    body: JSON.stringify({ order }),
+  });
+}
+
 /** DELETE /api/tasks/:id — remove a single task */
 export function deleteTask(id) {
   return request(`${API_BASE}/${id}`, { method: 'DELETE' });

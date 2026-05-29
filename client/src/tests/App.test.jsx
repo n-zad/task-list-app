@@ -8,6 +8,7 @@ const sampleTasks = [
     id: 1,
     title: 'Active task',
     completed: false,
+    position: 0,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
   },
@@ -15,6 +16,7 @@ const sampleTasks = [
     id: 2,
     title: 'Done task',
     completed: true,
+    position: 1,
     createdAt: '2026-01-02T00:00:00.000Z',
     updatedAt: '2026-01-02T00:00:00.000Z',
   },
@@ -74,5 +76,13 @@ describe('App', () => {
     render(<App />);
 
     expect(await screen.findByRole('button', { name: 'Clear completed' })).toBeEnabled();
+  });
+
+  it('shows reorder hint on the all filter', async () => {
+    fetch.mockResolvedValueOnce(mockFetchResponse(sampleTasks));
+
+    render(<App />);
+
+    expect(await screen.findByText('Drag tasks to reorder')).toBeInTheDocument();
   });
 });

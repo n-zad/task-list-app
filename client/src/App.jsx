@@ -138,6 +138,21 @@ export default function App() {
     }
   };
 
+  const handleReorder = async (orderedIds) => {
+    const previous = tasks;
+
+    try {
+      setError(null);
+      const byId = new Map(tasks.map((task) => [task.id, task]));
+      setTasks(orderedIds.map((id) => byId.get(id)));
+      const updated = await tasksApi.reorderTasks(orderedIds);
+      setTasks(updated);
+    } catch (err) {
+      setTasks(previous);
+      setError(err.message);
+    }
+  };
+
   const handleClearCompleted = async () => {
     try {
       setBusy(true);
@@ -156,6 +171,7 @@ export default function App() {
   };
 
   const isDisabled = loading || busy;
+  const canReorder = filter === 'all' && !isDisabled && tasks.length > 1;
 
   return (
     <div className="app">
@@ -180,9 +196,11 @@ export default function App() {
         tasks={filteredTasks}
         loading={loading}
         emptyMessage={emptyMessage}
+        canReorder={canReorder}
         onToggleComplete={handleToggleComplete}
         onDelete={handleDeleteTask}
         onEdit={handleEditTask}
+        onReorder={handleReorder}
       />
 
       {!loading && (

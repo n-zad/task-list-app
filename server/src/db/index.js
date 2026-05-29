@@ -7,13 +7,31 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 let db = null;
 
-/**
- * Database connection and initialization.
- *
- * - Use server/data/dev.sqlite for development
- * - Use server/data/test.sqlite for tests (NODE_ENV=test or DB_PATH)
- * - Executes schema.sql to create the tasks table if missing
- */
+function migrate(dbConnection) {
+  const columns = dbConnection.prepare('PRAGMA table_info(tasks)').all();
+  const hasPosition = columns.some((column) => column.name === 'position');
+
+  if (hasPosition) {
+    return;
+  }
+
+  dbConnection.exec(
+    'ALTER TABLE tasks ADD COLUMN position INTEGER NOT NULL DEFAULT 0',
+  );
+
+  const rows = dbConnection
+    .prepare('SELECT id FROM tasks ORDER BY created_at DESC, id DESC')
+    .all();
+  const update = dbConnection.prepare(
+    'UPDATE tasks SET position = ? WHERE id = ?',
+  );
+  const backfill = dbConnection.transaction((items) => {
+    items.forEach((row, index) => update.run(index, row.id));
+  });
+
+  backfill(rows);
+}
+
 export function getDbPath() {
   if (process.env.DB_PATH) {
     return process.env.DB_PATH;
@@ -32,6 +50,7 @@ export function initDb(dbPath = getDbPath()) {
   const connection = new Database(dbPath);
   const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
   connection.exec(schema);
+  migrate(connection);
 
   db = connection;
   return db;
@@ -52,15 +71,12 @@ export function closeDb() {
   }
 }
 
-/**
- * Map a raw SQLite row to an API-friendly task object.
- * Convert completed (0/1) to boolean and expose ISO timestamps.
- */
 export function toTask(row) {
   return {
     id: row.id,
     title: row.title,
     completed: Boolean(row.completed),
+    position: row.position,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

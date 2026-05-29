@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react';
 
-export default function TaskItem({ task, onToggleComplete, onDelete, onEdit }) {
+export default function TaskItem({
+  task,
+  canReorder = false,
+  isDragging = false,
+  onDragStart,
+  onDragEnd,
+  onToggleComplete,
+  onDelete,
+  onEdit,
+}) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
 
@@ -29,7 +38,32 @@ export default function TaskItem({ task, onToggleComplete, onDelete, onEdit }) {
   };
 
   return (
-    <li className={`task-item${task.completed ? ' task-item--completed' : ''}`}>
+    <li
+      className={[
+        'task-item',
+        task.completed ? 'task-item--completed' : '',
+        isDragging ? 'task-item--dragging' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
+      {canReorder && !isEditing && (
+        <button
+          type="button"
+          className="task-item__drag-handle"
+          draggable
+          onDragStart={(event) => {
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', String(task.id));
+            onDragStart();
+          }}
+          onDragEnd={onDragEnd}
+          aria-label={`Drag to reorder "${task.title}"`}
+        >
+          ⋮⋮
+        </button>
+      )}
+
       <input
         type="checkbox"
         className="task-item__checkbox"

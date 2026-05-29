@@ -3,6 +3,7 @@ import { getDb } from '../db/index.js';
 import * as taskStore from '../db/tasks.js';
 import {
   normalizeTitle,
+  parseReorderBody,
   parseStatusQuery,
   parseTaskId,
   parseTaskUpdates,
@@ -30,6 +31,21 @@ router.post('/', (req, res) => {
 
   const task = taskStore.createTask(getDb(), title);
   return res.status(201).json(task);
+});
+
+router.put('/reorder', (req, res) => {
+  const parsed = parseReorderBody(req.body);
+
+  if (parsed.error) {
+    return res.status(400).json({ error: parsed.error });
+  }
+
+  try {
+    const tasks = taskStore.reorderTasks(getDb(), parsed.order);
+    return res.json(tasks);
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
 });
 
 router.patch('/:id', (req, res) => {

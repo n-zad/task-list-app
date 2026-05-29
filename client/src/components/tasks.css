@@ -34,9 +34,25 @@
 }
 
 .task-list__status,
-.task-list__empty {
+.task-list__empty,
+.task-list__hint {
   color: #666;
   font-style: italic;
+}
+
+.task-list__hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  font-style: normal;
+}
+
+.task-list__insertion-line {
+  height: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-top: 2px solid #2563eb;
+  list-style: none;
 }
 
 .task-item {
@@ -45,6 +61,24 @@
   gap: 0.75rem;
   padding: 0.75rem 0;
   border-bottom: 1px solid #eee;
+}
+
+.task-item--dragging {
+  opacity: 0.5;
+}
+
+.task-item__drag-handle {
+  border: none;
+  background: transparent;
+  color: #999;
+  cursor: grab;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.25rem;
+}
+
+.task-item__drag-handle:active {
+  cursor: grabbing;
 }
 
 .task-item--completed .task-item__title {

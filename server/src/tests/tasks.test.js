@@ -195,6 +195,52 @@ describe('DELETE /api/tasks/:id', () => {
   });
 });
 
+describe('PUT /api/tasks/reorder', () => {
+  it('reorders tasks and returns the updated list', async () => {
+    const first = await request(app)
+      .post('/api/tasks')
+      .send({ title: 'First' });
+    const second = await request(app)
+      .post('/api/tasks')
+      .send({ title: 'Second' });
+    const third = await request(app)
+      .post('/api/tasks')
+      .send({ title: 'Third' });
+
+    const response = await request(app)
+      .put('/api/tasks/reorder')
+      .send({ order: [first.body.id, third.body.id, second.body.id] });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(
+      response.body.map((task) => task.title),
+      ['First', 'Third', 'Second'],
+    );
+  });
+
+  it('rejects incomplete order arrays', async () => {
+    const created = await request(app)
+      .post('/api/tasks')
+      .send({ title: 'Only one' });
+
+    const response = await request(app)
+      .put('/api/tasks/reorder')
+      .send({ order: [created.body.id, 999] });
+
+    assert.equal(response.status, 400);
+    assert.equal(response.body.error, 'order must include every task');
+  });
+
+  it('rejects invalid order payloads', async () => {
+    const response = await request(app)
+      .put('/api/tasks/reorder')
+      .send({ order: 'not-an-array' });
+
+    assert.equal(response.status, 400);
+    assert.equal(response.body.error, 'order must be an array of task ids');
+  });
+});
+
 describe('DELETE /api/tasks/completed', () => {
   it('deletes only completed tasks', async () => {
     const active = await request(app)
