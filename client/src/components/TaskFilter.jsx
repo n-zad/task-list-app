@@ -1,9 +1,4 @@
-/**
- * Filter controls — All / Active / Completed.
- *
- * Can filter on the frontend (simple for small lists) or pass status
- * to tasksApi.getTasks(status) for server-side filtering.
- */
+/** Filter controls — All / Active / Completed. */
 export default function TaskFilter({ filter, onFilterChange }) {
   const options = [
     { value: 'all', label: 'All' },

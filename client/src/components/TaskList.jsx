@@ -1,14 +1,9 @@
 import TaskItem from './TaskItem.jsx';
 
-/**
- * Renders the list of tasks with loading and empty states.
- *
- * Optional: Accept a filter prop and show only matching tasks,
- * or filter in App.jsx before passing tasks down.
- */
 export default function TaskList({
   tasks,
   loading = false,
+  emptyMessage = 'No tasks yet. Add one above.',
   onToggleComplete,
   onDelete,
   onEdit,
@@ -18,7 +13,7 @@ export default function TaskList({
   }
 
   if (tasks.length === 0) {
-    return <p className="task-list__empty">No tasks yet. Add one above.</p>;
+    return <p className="task-list__empty">{emptyMessage}</p>;
   }
 
   return (
