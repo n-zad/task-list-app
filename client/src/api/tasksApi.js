@@ -12,7 +12,6 @@ async function request(url, options = {}) {
   });
 
   if (!response.ok) {
-    // Parse { error: string } from backend and throw for UI handling
     const body = await response.json().catch(() => ({}));
     throw new Error(body.error || `Request failed (${response.status})`);
   }
@@ -24,33 +23,38 @@ async function request(url, options = {}) {
   return response.json();
 }
 
-/** GET /api/tasks — fetch all tasks */
-export async function getTasks(/* status */) {
-  // Optional: append ?status=active or ?status=completed when filtering via API
-  // return request(API_BASE);
-  throw new Error('getTasks() not implemented yet');
+/** GET /api/tasks — fetch all tasks, optionally filtered by status */
+export async function getTasks(status) {
+  const url =
+    status && status !== 'all'
+      ? `${API_BASE}?status=${encodeURIComponent(status)}`
+      : API_BASE;
+
+  return request(url);
 }
 
 /** POST /api/tasks — create a new task */
-export async function createTask(title) {
-  // return request(API_BASE, { method: 'POST', body: JSON.stringify({ title }) });
-  throw new Error('createTask() not implemented yet');
+export function createTask(title) {
+  return request(API_BASE, {
+    method: 'POST',
+    body: JSON.stringify({ title }),
+  });
 }
 
 /** PATCH /api/tasks/:id — update title and/or completed */
-export async function updateTask(id, updates) {
-  // return request(`${API_BASE}/${id}`, { method: 'PATCH', body: JSON.stringify(updates) });
-  throw new Error('updateTask() not implemented yet');
+export function updateTask(id, updates) {
+  return request(`${API_BASE}/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
 }
 
 /** DELETE /api/tasks/:id — remove a single task */
-export async function deleteTask(id) {
-  // return request(`${API_BASE}/${id}`, { method: 'DELETE' });
-  throw new Error('deleteTask() not implemented yet');
+export function deleteTask(id) {
+  return request(`${API_BASE}/${id}`, { method: 'DELETE' });
 }
 
 /** DELETE /api/tasks/completed — clear all completed tasks */
-export async function deleteCompletedTasks() {
-  // return request(`${API_BASE}/completed`, { method: 'DELETE' });
-  throw new Error('deleteCompletedTasks() not implemented yet');
+export function deleteCompletedTasks() {
+  return request(`${API_BASE}/completed`, { method: 'DELETE' });
 }

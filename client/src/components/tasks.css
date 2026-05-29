@@ -56,6 +56,35 @@
   flex: 1;
 }
 
+.task-item__editor {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.task-item__edit-input {
+  flex: 1;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.task-item__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.task-item__edit-button,
+.task-item__save,
+.task-item__cancel {
+  border: none;
+  background: transparent;
+  color: #2563eb;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
 .task-item__delete {
   border: none;
   background: transparent;

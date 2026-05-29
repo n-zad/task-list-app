@@ -1,44 +1,89 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import * as tasksApi from './api/tasksApi.js';
 import TaskForm from './components/TaskForm.jsx';
 import TaskList from './components/TaskList.jsx';
 import './App.css';
 import './components/tasks.css';
 
-/**
- * Root component — owns task list state and coordinates API calls.
- *
- * Responsibilities:
- * - Load tasks on mount (tasksApi.getTasks)
- * - Handle create, update, delete actions
- * - Track loading and error state
- *
- * Optional enhancements:
- * - Filter state (all / active / completed)
- * - Remaining task count
- * - Clear completed action
- */
 export default function App() {
-  // TODO: Replace with tasks fetched from the backend
-  const [tasks] = useState([]);
-  const [loading] = useState(false);
-  const [error] = useState(null);
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
 
-  // TODO: Wire up handlers that call tasksApi and update local state
-  const handleAddTask = (_title) => {
-    // tasksApi.createTask(title)
+  const loadTasks = useCallback(async () => {
+    try {
+      setError(null);
+      const data = await tasksApi.getTasks();
+      setTasks(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadTasks();
+  }, [loadTasks]);
+
+  const handleAddTask = async (title) => {
+    try {
+      setBusy(true);
+      setError(null);
+      const task = await tasksApi.createTask(title);
+      setTasks((current) => [task, ...current]);
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const handleToggleComplete = (_id) => {
-    // tasksApi.updateTask(id, { completed: !task.completed })
+  const handleToggleComplete = async (id) => {
+    const task = tasks.find((item) => item.id === id);
+    if (!task) {
+      return;
+    }
+
+    try {
+      setError(null);
+      const updated = await tasksApi.updateTask(id, {
+        completed: !task.completed,
+      });
+      setTasks((current) =>
+        current.map((item) => (item.id === id ? updated : item)),
+      );
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
-  const handleDeleteTask = (_id) => {
-    // tasksApi.deleteTask(id)
+  const handleDeleteTask = async (id) => {
+    try {
+      setError(null);
+      await tasksApi.deleteTask(id);
+      setTasks((current) => current.filter((item) => item.id !== id));
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
-  const handleEditTask = (_id, _title) => {
-    // tasksApi.updateTask(id, { title })
+  const handleEditTask = async (id, title) => {
+    try {
+      setError(null);
+      const updated = await tasksApi.updateTask(id, { title });
+      setTasks((current) =>
+        current.map((item) => (item.id === id ? updated : item)),
+      );
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
   };
+
+  const isDisabled = loading || busy;
 
   return (
     <div className="app">
@@ -47,9 +92,13 @@ export default function App() {
         <p className="app__subtitle">Add, complete, and manage your tasks</p>
       </header>
 
-      {error && <p className="app__error" role="alert">{error}</p>}
+      {error && (
+        <p className="app__error" role="alert">
+          {error}
+        </p>
+      )}
 
-      <TaskForm onAdd={handleAddTask} disabled={loading} />
+      <TaskForm onAdd={handleAddTask} disabled={isDisabled} />
 
       <TaskList
         tasks={tasks}
@@ -58,10 +107,6 @@ export default function App() {
         onDelete={handleDeleteTask}
         onEdit={handleEditTask}
       />
-
-      <footer className="app__footer">
-        {/* TODO: Remaining count — e.g. "3 tasks remaining" */}
-      </footer>
     </div>
   );
 }
