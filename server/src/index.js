@@ -1,13 +1,12 @@
 import cors from 'cors';
 import express from 'express';
+import { initDb } from './db/index.js';
 import tasksRouter from './routes/tasks.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// TODO: Initialize SQLite database on startup (see db/index.js)
-// import { initDb } from './db/index.js';
-// initDb();
+initDb();
 
 app.use(cors());
 app.use(express.json());
