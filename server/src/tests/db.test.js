@@ -3,7 +3,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { after, before, beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { closeDb, getDb, initDb, toTask } from '../db/index.js';
+import Database from 'better-sqlite3';
+import { closeDb, getDb, getDbPath, initDb, toTask } from '../db/index.js';
 import {
   countActiveTasks,
   createTask,
@@ -43,6 +44,72 @@ beforeEach(() => {
 });
 
 describe('database initialization', () => {
+  it('resolves the test database path from NODE_ENV', () => {
+    const previousPath = process.env.DB_PATH;
+    delete process.env.DB_PATH;
+    process.env.NODE_ENV = 'test';
+
+    assert.match(getDbPath(), /test\.sqlite$/);
+
+    process.env.DB_PATH = previousPath;
+  });
+
+  it('resolves a custom database path from DB_PATH', () => {
+    process.env.DB_PATH = testDbPath;
+    assert.equal(getDbPath(), testDbPath);
+  });
+
+  it('uses the dev database filename outside test mode', () => {
+    const previousEnv = process.env.NODE_ENV;
+    const previousPath = process.env.DB_PATH;
+
+    delete process.env.DB_PATH;
+    process.env.NODE_ENV = 'development';
+
+    assert.match(getDbPath(), /dev\.sqlite$/);
+
+    process.env.NODE_ENV = previousEnv;
+    process.env.DB_PATH = previousPath;
+  });
+
+  it('initializes the database when getDb is called first', () => {
+    removeTestDb();
+    const connection = getDb();
+    assert.ok(connection);
+  });
+
+  it('migrates legacy databases without a position column', () => {
+    removeTestDb();
+    fs.mkdirSync(path.dirname(testDbPath), { recursive: true });
+
+    const legacy = new Database(testDbPath);
+    legacy.exec(`
+      CREATE TABLE tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        completed INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+    `);
+    legacy
+      .prepare(
+        `INSERT INTO tasks (title, completed, created_at, updated_at)
+         VALUES (?, 0, ?, ?)`,
+      )
+      .run('Legacy task', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z');
+    legacy.close();
+
+    initDb(testDbPath);
+    const columns = getDb()
+      .prepare('PRAGMA table_info(tasks)')
+      .all()
+      .map((column) => column.name);
+
+    assert.ok(columns.includes('position'));
+    assert.deepEqual(listTasks(getDb()).map((task) => task.title), ['Legacy task']);
+  });
+
   it('creates the tasks table', () => {
     const db = getDb();
     const table = db
@@ -131,6 +198,37 @@ describe('task repository', () => {
       reordered.map((task) => task.title),
       ['First', 'Third', 'Second'],
     );
+  });
+
+  it('throws when order contains an unknown task id', () => {
+    const db = getDb();
+    const first = createTask(db, 'First');
+    createTask(db, 'Second');
+
+    assert.throws(
+      () => reorderTasks(db, [first.id, 999]),
+      /order contains unknown task id/,
+    );
+  });
+
+  it('updates only the title when completed is omitted', () => {
+    const db = getDb();
+    const created = createTask(db, 'Original');
+
+    const updated = updateTask(db, created.id, { title: 'Renamed' });
+
+    assert.equal(updated.title, 'Renamed');
+    assert.equal(updated.completed, false);
+  });
+
+  it('updates only completed when title is omitted', () => {
+    const db = getDb();
+    const created = createTask(db, 'Toggle me');
+
+    const updated = updateTask(db, created.id, { completed: true });
+
+    assert.equal(updated.title, 'Toggle me');
+    assert.equal(updated.completed, true);
   });
 
   it('updates title and completed state', () => {

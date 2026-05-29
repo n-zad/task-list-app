@@ -1,7 +1,7 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import TaskItem from './TaskItem.jsx';
 
-function moveTask(ids, draggedId, insertIndex) {
+export function moveTask(ids, draggedId, insertIndex) {
   const fromIndex = ids.indexOf(draggedId);
 
   if (fromIndex === -1 || insertIndex < 0 || insertIndex > ids.length) {
@@ -52,16 +52,7 @@ function InsertionLine() {
   return <li className="task-list__insertion-line" aria-hidden="true" />;
 }
 
-export default function TaskList({
-  tasks,
-  loading = false,
-  emptyMessage = 'No tasks yet. Add one above.',
-  canReorder = false,
-  onToggleComplete,
-  onDelete,
-  onEdit,
-  onReorder,
-}) {
+export function useTaskListReorder({ canReorder, tasks, onReorder }) {
   const [draggedId, setDraggedId] = useState(null);
   const [insertIndex, setInsertIndex] = useState(null);
   const listRef = useRef(null);
@@ -132,6 +123,39 @@ export default function TaskList({
     };
   }, [draggedId, canReorder, handleDrop]);
 
+  const startDrag = (taskId, index) => {
+    setDraggedId(taskId);
+    setInsertIndex(index);
+  };
+
+  return {
+    draggedId,
+    insertIndex,
+    listRef,
+    finishDrag,
+    handleDrop,
+    startDrag,
+  };
+}
+
+export default function TaskList({
+  tasks,
+  loading = false,
+  emptyMessage = 'No tasks yet. Add one above.',
+  canReorder = false,
+  onToggleComplete,
+  onDelete,
+  onEdit,
+  onReorder,
+}) {
+  const {
+    draggedId,
+    insertIndex,
+    listRef,
+    finishDrag,
+    startDrag,
+  } = useTaskListReorder({ canReorder, tasks, onReorder });
+
   if (loading) {
     return <p className="task-list__status">Loading tasks…</p>;
   }
@@ -159,10 +183,7 @@ export default function TaskList({
               task={task}
               canReorder={canReorder}
               isDragging={draggedId === task.id}
-              onDragStart={() => {
-                setDraggedId(task.id);
-                setInsertIndex(index);
-              }}
+              onDragStart={() => startDrag(task.id, index)}
               onDragEnd={finishDrag}
               onToggleComplete={onToggleComplete}
               onDelete={onDelete}

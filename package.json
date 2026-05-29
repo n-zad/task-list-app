@@ -3,7 +3,8 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
-    "test": "concurrently \"npm run test --prefix server\" \"npm run test --prefix client\""
+    "test": "concurrently \"npm run test --prefix server\" \"npm run test --prefix client\"",
+    "test:coverage": "concurrently \"npm run test:coverage --prefix server\" \"npm run test:coverage --prefix client\""
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

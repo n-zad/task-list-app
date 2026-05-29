@@ -116,6 +116,15 @@ describe('POST /api/tasks', () => {
 });
 
 describe('PATCH /api/tasks/:id', () => {
+  it('rejects invalid task ids', async () => {
+    const response = await request(app)
+      .patch('/api/tasks/not-a-number')
+      .send({ title: 'Nope' });
+
+    assert.equal(response.status, 400);
+    assert.equal(response.body.error, 'Invalid task id');
+  });
+
   it('updates title and toggles completed', async () => {
     const created = await request(app)
       .post('/api/tasks')
@@ -173,6 +182,13 @@ describe('PATCH /api/tasks/:id', () => {
 });
 
 describe('DELETE /api/tasks/:id', () => {
+  it('rejects invalid task ids', async () => {
+    const response = await request(app).delete('/api/tasks/0');
+
+    assert.equal(response.status, 400);
+    assert.equal(response.body.error, 'Invalid task id');
+  });
+
   it('deletes a task', async () => {
     const created = await request(app)
       .post('/api/tasks')
@@ -238,6 +254,18 @@ describe('PUT /api/tasks/reorder', () => {
 
     assert.equal(response.status, 400);
     assert.equal(response.body.error, 'order must be an array of task ids');
+  });
+
+  it('rejects unknown task ids in the order array', async () => {
+    const first = await request(app).post('/api/tasks').send({ title: 'First' });
+    await request(app).post('/api/tasks').send({ title: 'Second' });
+
+    const response = await request(app)
+      .put('/api/tasks/reorder')
+      .send({ order: [first.body.id, 999] });
+
+    assert.equal(response.status, 400);
+    assert.equal(response.body.error, 'order contains unknown task id');
   });
 });
 
