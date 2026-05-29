@@ -1,61 +1,78 @@
 import { Router } from 'express';
+import { getDb } from '../db/index.js';
+import * as taskStore from '../db/tasks.js';
+import {
+  normalizeTitle,
+  parseStatusQuery,
+  parseTaskId,
+  parseTaskUpdates,
+} from './validation.js';
 
 const router = Router();
 
-/**
- * GET /api/tasks
- * Returns all tasks ordered by created_at descending.
- *
- * Optional: Support ?status=active or ?status=completed query filters.
- */
-router.get('/', (_req, res) => {
-  // TODO: Query tasks from SQLite and return JSON array
-  res.status(501).json({ error: 'Not implemented yet' });
+router.get('/', (req, res) => {
+  const statusResult = parseStatusQuery(req.query.status);
+
+  if (statusResult.error) {
+    return res.status(400).json({ error: statusResult.error });
+  }
+
+  const tasks = taskStore.listTasks(getDb(), { status: statusResult.status });
+  return res.json(tasks);
 });
 
-/**
- * POST /api/tasks
- * Body: { title: string }
- *
- * Validation:
- * - Reject missing or whitespace-only titles (400)
- * - Trim title before saving
- */
-router.post('/', (_req, res) => {
-  // TODO: Validate body, insert row, return created task (201)
-  res.status(501).json({ error: 'Not implemented yet' });
+router.post('/', (req, res) => {
+  const title = normalizeTitle(req.body?.title);
+
+  if (!title) {
+    return res.status(400).json({ error: 'Task title is required' });
+  }
+
+  const task = taskStore.createTask(getDb(), title);
+  return res.status(201).json(task);
 });
 
-/**
- * PATCH /api/tasks/:id
- * Body: { title?: string, completed?: boolean }
- *
- * Validation:
- * - Return 404 if task not found
- * - Reject empty edited titles (400)
- * - Allow updating title, completed, or both
- */
-router.patch('/:id', (_req, res) => {
-  // TODO: Validate id and body, update row, return updated task
-  res.status(501).json({ error: 'Not implemented yet' });
+router.patch('/:id', (req, res) => {
+  const id = parseTaskId(req.params.id);
+
+  if (!id) {
+    return res.status(400).json({ error: 'Invalid task id' });
+  }
+
+  const parsed = parseTaskUpdates(req.body);
+
+  if (parsed.error) {
+    return res.status(400).json({ error: parsed.error });
+  }
+
+  const task = taskStore.updateTask(getDb(), id, parsed.updates);
+
+  if (!task) {
+    return res.status(404).json({ error: 'Task not found' });
+  }
+
+  return res.json(task);
 });
 
-/**
- * DELETE /api/tasks/completed
- * Deletes all completed tasks. Must be registered BEFORE /:id to avoid route conflicts.
- */
 router.delete('/completed', (_req, res) => {
-  // TODO: Delete rows where completed = 1, return count removed
-  res.status(501).json({ error: 'Not implemented yet' });
+  const deleted = taskStore.deleteCompletedTasks(getDb());
+  return res.json({ deleted });
 });
 
-/**
- * DELETE /api/tasks/:id
- * Returns 404 if the task does not exist.
- */
-router.delete('/:id', (_req, res) => {
-  // TODO: Validate id, delete row, return 204
-  res.status(501).json({ error: 'Not implemented yet' });
+router.delete('/:id', (req, res) => {
+  const id = parseTaskId(req.params.id);
+
+  if (!id) {
+    return res.status(400).json({ error: 'Invalid task id' });
+  }
+
+  const deleted = taskStore.deleteTask(getDb(), id);
+
+  if (!deleted) {
+    return res.status(404).json({ error: 'Task not found' });
+  }
+
+  return res.status(204).send();
 });
 
 export default router;
